@@ -1,0 +1,36 @@
+{
+  "$schema": "https://unpkg.com/@openmrs/esm-framework/openmrs-module.schema.json",
+  "name": "@openmrs/print-module",
+  "version": "1.0.0",
+  "description": "Print functionality for OpenMRS O3",
+  "imports": [
+    "@openmrs/esm-framework",
+    "@openmrs/esm-patient-records-app"
+  ],
+  "extensions": [
+    {
+      "name": "print-patient-action",
+      "slot": "patient-action-slot",
+      "component": "PrintPatientAction",
+      "order": 100,
+      "canHide": true
+    },
+    {
+      "name": "print-visit-action",
+      "slot": "visit-action-slot",
+      "component": "PrintVisitAction",
+      "order": 100,
+      "canHide": true
+    }
+  ],
+  "extensionSlots": [
+    {
+      "name": "print-patient-action",
+      "description": "Print patient summary and visit data"
+    },
+    {
+      "name": "print-visit-action",
+      "description": "Print specific visit details"
+    }
+  ]
+}

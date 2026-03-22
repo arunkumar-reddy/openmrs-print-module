@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenMRS Print Module - Test Page</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header { background: white; padding: 24px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .header h1 { color: #003366; margin-bottom: 8px; }
+    .header p { color: #666; }
+    .controls { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+    .controls input { flex: 1; min-width: 300px; padding: 12px 16px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; }
+    .controls button { padding: 12px 24px; background: #003366; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: 500; }
+    .controls button:hover { background: #004080; }
+    .controls button:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-secondary { background: #666; }
+    .btn-secondary:hover { background: #555; }
+    .btn-success { background: #28a745; }
+    .btn-success:hover { background: #218838; }
+    .loading { display: none; align-items: center; gap: 12px; padding: 20px; background: white; border-radius: 8px; }
+    .loading.active { display: flex; }
+    .spinner { width: 24px; height: 24px; border: 3px solid #f3f3f3; border-top: 3px solid #003366; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error { display: none; padding: 16px; background: #ffebee; color: #c62828; border-radius: 8px; margin-bottom: 20px; }
+    .error.active { display: block; }
+    .patient-card { background: white; padding: 24px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .patient-card h2 { color: #003366; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #003366; }
+    .patient-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+    .info-item { padding: 12px; background: #f5f5f5; border-radius: 4px; }
+    .info-item label { font-weight: 600; color: #333; display: block; margin-bottom: 4px; }
+    .info-item span { color: #666; }
+    .section { margin-bottom: 24px; }
+    .section h3 { color: #004080; margin-bottom: 12px; font-size: 18px; }
+    .data-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .data-table th, .data-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #eee; }
+    .data-table th { background: #003366; color: white; font-weight: 600; }
+    .data-table tr:hover { background: #f9f9f9; }
+    .data-table tr:last-child td { border-bottom: none; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+    .badge-blue { background: #e3f2fd; color: #1565c0; }
+    .badge-green { background: #e8f5e9; color: #2e7d32; }
+    .badge-orange { background: #fff3e0; color: #ef6c00; }
+    .no-data { padding: 20px; text-align: center; color: #999; font-style: italic; }
+    @media print {
+      body { background: white; padding: 0; }
+      .container { max-width: 100%; }
+      .header, .controls, .no-print { display: none !important; }
+      .patient-card, .section { box-shadow: none; page-break-inside: avoid; }
+      .data-table { box-shadow: none; }
+      .data-table th { background: #ddd !important; color: #333 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🏥 OpenMRS Print Module Test</h1>
+      <p>Test the print functionality with your OpenMRS instance</p>
+      <p style="font-size: 14px; margin-top: 10px;"><strong>Tip:</strong> Get your JSESSIONID from browser cookies after logging into OpenMRS at <code>http://localhost/openmrs/spa</code></p>
+    </div>
+
+    <div class="controls no-print" style="margin-top: -15px;">
+      <button onclick="autoGetSessionId()" class="btn-secondary" style="font-size: 14px; padding: 8px 16px;">🔄 Auto-detect Session (if on same browser)</button>
+    </div>
+
+    <div class="controls no-print">
+      <input type="text" id="patientUuid" placeholder="Enter Patient UUID" value="10001MJ">
+      <input type="text" id="sessionId" placeholder="JSESSIONID (optional)" style="flex: 2;">
+      <button onclick="fetchData()" id="fetchBtn">📊 Fetch Data</button>
+      <button onclick="printViaBrowser()" id="printBtn" class="btn-success" disabled>🖨️ Print</button>
+      <button onclick="generatePDF()" id="pdfBtn" class="btn-secondary" disabled>📄 Download PDF</button>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <span>Loading patient data...</span>
+    </div>
+
+    <div class="error" id="error"></div>
+
+    <div id="content"></div>
+  </div>
+
+  <script>
+    const OPENMRS_URL = 'http://localhost/openmrs';
+    let printData = null;
+
+    async function fetchData() {
+      const patientUuid = document.getElementById('patientUuid').value;
+      const loading = document.getElementById('loading');
+      const error = document.getElementById('error');
+      const content = document.getElementById('content');
+      const fetchBtn = document.getElementById('fetchBtn');
+      const printBtn = document.getElementById('printBtn');
+      const pdfBtn = document.getElementById('pdfBtn');
+
+      loading.classList.add('active');
+      error.classList.remove('active');
+      content.innerHTML = '';
+      fetchBtn.disabled = true;
+
+      const sessionId = document.getElementById('sessionId').value.trim();
+      const headers = {
+        'Accept': 'application/json',
+        'Accept-Language': 'en-US,en;q=0.8'
+      };
+      if (sessionId) {
+        headers['Cookie'] = `JSESSIONID=${sessionId}`;
+      }
+
+      try {
+        const [patientRes, visitsRes, encountersRes, ordersRes] = await Promise.all([
+          fetch(`${OPENMRS_URL}/ws/rest/v1/patient?q=${patientUuid}&v=full`, { headers }),
+          fetch(`${OPENMRS_URL}/ws/rest/v1/visit?patient=${patientUuid}&v=custom:(uuid,location,encounters:(uuid,diagnoses:(uuid,display,rank,diagnosis,voided),form:(uuid,display,name,description,encounterType,version,resources:(uuid,display,name,valueReference)),encounterDatetime,orders:full,obs:(uuid,concept:(uuid,display,conceptClass:(uuid,display)),display,groupMembers:(uuid,concept:(uuid,display),value:(uuid,display),display),value,obsDatetime),encounterType:(uuid,display,viewPrivilege,editPrivilege),encounterProviders:(uuid,display,encounterRole:(uuid,display),provider:(uuid,person:(uuid,display)))),visitType:(uuid,name,display),startDatetime,stopDatetime,patient,attributes:(attributeType:ref,display,uuid,value)&limit=10&startIndex=0&totalCount=true`, { headers }),
+          fetch(`${OPENMRS_URL}/ws/rest/v1/encounter?patient=${patientUuid}&v=full`, { headers }),
+          fetch(`${OPENMRS_URL}/ws/rest/v1/order?patient=${patientUuid}&v=full`, { headers })
+        ]);
+
+        const patient = (await patientRes.json()).results?.[0];
+        const visitsData = await visitsRes.json();
+        const visits = visitsData.results || visitsData || [];
+        const encounters = (await encountersRes.json()).results || [];
+        const orders = (await ordersRes.json()).results?.filter(o => o.type === 'drugorder') || [];
+
+        if (!patient) throw new Error('Patient not found');
+
+        printData = { patient, visits, encounters, medications: orders };
+        renderContent(patient, visits, encounters, orders);
+
+        printBtn.disabled = false;
+        pdfBtn.disabled = false;
+      } catch (err) {
+        error.textContent = `Error: ${err.message}`;
+        error.classList.add('active');
+      } finally {
+        loading.classList.remove('active');
+        fetchBtn.disabled = false;
+      }
+    }
+
+    function renderContent(patient, visits, encounters, medications) {
+      const content = document.getElementById('content');
+      
+      let html = `
+        <div class="patient-card">
+          <h2>Patient Information</h2>
+          <div class="patient-info">
+            <div class="info-item"><label>Name</label><span>${patient.display}</span></div>
+            <div class="info-item"><label>UUID</label><span>${patient.uuid}</span></div>
+            <div class="info-item"><label>Gender</label><span>${patient.person?.gender || 'N/A'}</span></div>
+            <div class="info-item"><label>Age</label><span>${patient.person?.age || 'N/A'}</span></div>
+            <div class="info-item"><label>Birthdate</label><span>${patient.person?.birthdate || 'N/A'}</span></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>📅 Visits (${visits.length})</h3>
+          ${visits.length ? `
+            <table class="data-table">
+              <thead><tr><th>Date</th><th>Type</th><th>Location</th><th>Encounters</th></tr></thead>
+              <tbody>
+                ${visits.slice(0, 20).map(v => `
+                  <tr>
+                    <td>${new Date(v.startDatetime).toLocaleString()}</td>
+                    <td><span class="badge badge-blue">${v.visitType?.display}</span></td>
+                    <td>${v.location?.display}</td>
+                    <td>${v.encounters?.length || 0}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          ` : '<p class="no-data">No visits recorded</p>'}
+        </div>
+
+        <div class="section">
+          <h3>🔍 Encounters (${encounters.length})</h3>
+          ${encounters.length ? `
+            <table class="data-table">
+              <thead><tr><th>Date</th><th>Type</th><th>Location</th><th>Observations</th></tr></thead>
+              <tbody>
+                ${encounters.slice(0, 30).map(e => `
+                  <tr>
+                    <td>${new Date(e.encounterDatetime).toLocaleString()}</td>
+                    <td><span class="badge badge-green">${e.encounterType?.display}</span></td>
+                    <td>${e.location?.display}</td>
+                    <td>${e.obs?.length || 0}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          ` : '<p class="no-data">No encounters recorded</p>'}
+        </div>
+
+        <div class="section">
+          <h3>💊 Medications (${medications.length})</h3>
+          ${medications.length ? `
+            <table class="data-table">
+              <thead><tr><th>Drug</th><th>Dosage</th><th>Frequency</th><th>Duration</th><th>Route</th><th>Started</th><th>Prescriber</th></tr></thead>
+              <tbody>
+                ${medications.slice(0, 30).map(m => `
+                  <tr>
+                    <td><span class="badge badge-orange">${m.drug?.display || m.display}</span></td>
+                    <td>${m.dose} ${m.doseUnits?.display} ${m.dosingInstructions || ''}</td>
+                    <td>${m.frequency?.display || 'N/A'}</td>
+                    <td>${m.duration} ${m.durationUnits?.display}</td>
+                    <td>${m.route?.display || 'N/A'}</td>
+                    <td>${new Date(m.dateActivated).toLocaleDateString()}</td>
+                    <td>${m.orderer?.display || 'N/A'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          ` : '<p class="no-data">No medications prescribed</p>'}
+        </div>
+      `;
+
+      content.innerHTML = html;
+    }
+
+    function printViaBrowser() {
+      if (!printData) return;
+      window.print();
+    }
+
+    async function generatePDF() {
+      if (!printData) return;
+      
+      const { jsPDF } = await import('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/+esm');
+      const doc = new jsPDF();
+      const { patient, visits, encounters, medications } = printData;
+
+      let y = 10;
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text('OpenMRS Clinical Summary', 105, y, { align: 'center' });
+      y += 8;
+      
+      doc.setFontSize(10);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 105, y, { align: 'center' });
+      y += 10;
+      
+      doc.setLineWidth(0.5);
+      doc.line(10, y, 200, y);
+      y += 10;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('Patient Information', 10, y);
+      y += 6;
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text(`Name: ${patient.display}`, 10, y);
+      y += 5;
+      doc.text(`Gender: ${patient.person?.gender}`, 10, y);
+      y += 5;
+      doc.text(`Age: ${patient.person?.age}`, 10, y);
+      y += 5;
+      doc.text(`Birthdate: ${patient.person?.birthdate}`, 10, y);
+      y += 8;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 128);
+      doc.text('Visits', 10, y);
+      y += 6;
+      doc.setTextColor(0, 0, 0);
+      
+      visits.slice(0, 20).forEach(v => {
+        if (y > 270) { doc.addPage(); y = 10; }
+        doc.setFontSize(9);
+        doc.text(`• ${v.visitType?.display} - ${new Date(v.startDatetime).toLocaleDateString()} @ ${v.location?.display}`, 10, y);
+        y += 5;
+      });
+      y += 5;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 128);
+      doc.text('Encounters', 10, y);
+      y += 6;
+      doc.setTextColor(0, 0, 0);
+      
+      encounters.slice(0, 30).forEach(e => {
+        if (y > 270) { doc.addPage(); y = 10; }
+        doc.setFontSize(9);
+        doc.text(`• ${e.encounterType?.display} - ${new Date(e.encounterDatetime).toLocaleDateString()}`, 10, y);
+        y += 5;
+      });
+      y += 5;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 128);
+      doc.text('Medications', 10, y);
+      y += 6;
+      doc.setTextColor(0, 0, 0);
+      
+      medications.slice(0, 30).forEach(m => {
+        if (y > 270) { doc.addPage(); y = 10; }
+        doc.setFontSize(9);
+        doc.text(`• ${m.drug?.display || m.display} - ${m.dose} ${m.doseUnits?.display} ${m.frequency?.display}`, 10, y);
+        y += 5;
+      });
+
+      doc.save(`Patient-Summary-${patient.uuid}.pdf`);
+    }
+
+    window.onload = () => {
+      console.log('OpenMRS Print Module Test Page loaded');
+      console.log('Patient UUID:', document.getElementById('patientUuid').value);
+    };
+  </script>
+</body>
+</html>
