@@ -168,6 +168,13 @@ export default Component;
 - Keep commits focused on single features/fixes
 - Follow existing commit style in repo
 
+## OpenMRS documentation
+- Overview - https://openmrs.atlassian.net/wiki/spaces/docs/pages/151093495/Introduction+to+O3+for+Developers
+- Key Repositories - https://openmrs.atlassian.net/wiki/spaces/docs/pages/150962486/Key+O3+Repositories
+- Configuration - https://openmrs.atlassian.net/wiki/spaces/docs/pages/151093674/Configure+O3
+- Frontend modules - https://openmrs.atlassian.net/wiki/spaces/docs/pages/150930084/Frontend+Modules
+- Recipes for O3 - https://openmrs.atlassian.net/wiki/spaces/docs/pages/151093920/Recipes+for+O3+Development
+
 ## Dependencies
 - React 18.2.0
 - OpenMRS Framework 8.0.0
