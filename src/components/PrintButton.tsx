@@ -1,14 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { useTranslation } from '@openmrs/esm-framework';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   getPatient, 
   getVisits, 
   getEncounters, 
-  getActiveMedications,
-  Patient, 
-  Visit, 
-  Encounter, 
-  Order 
+  getMedications,
 } from '../api/api';
 import { PDFGenerator, printViaBrowser, PrintData } from '../api/pdf-generator';
 import PrintPreviewModal from './PrintPreviewModal';
@@ -34,7 +30,7 @@ const PrintButton: React.FC<PrintButtonProps> = ({ patientUuid }) => {
         getPatient(patientUuid),
         getVisits(patientUuid),
         getEncounters(patientUuid),
-        getActiveMedications(patientUuid),
+        getMedications(patientUuid),
       ]);
 
       const data: PrintData = {
@@ -59,7 +55,7 @@ const PrintButton: React.FC<PrintButtonProps> = ({ patientUuid }) => {
     
     if (method === 'pdf') {
       const generator = new PDFGenerator();
-      const pdf = generator.generatePDF(printData);
+      generator.generatePDF(printData);
       generator.savePDF(`Patient-Summary-${patientUuid}.pdf`);
     } else {
       await printViaBrowser(printData);

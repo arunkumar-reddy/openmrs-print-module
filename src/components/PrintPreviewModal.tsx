@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTranslation } from '@openmrs/esm-framework';
+import { useTranslation } from 'react-i18next';
 import { PrintData } from '../api/pdf-generator';
 import styles from './PrintPreviewModal.module.css';
 

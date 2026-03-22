@@ -1,6 +1,5 @@
 import React from 'react';
-import { getGlobalSpace } from '@openmrs/esm-framework';
-import PrintButton from './components/PrintButton';
+import PrintButton from '../components/PrintButton';
 
 declare global {
   interface Window {
@@ -11,8 +10,7 @@ declare global {
 }
 
 const PrintPatientAction: React.FC = () => {
-  const patientContext = getGlobalSpace('patient');
-  const patientUuid = patientContext?.patientUuid;
+  const patientUuid = window.__openmrsPatientContext?.patientUuid;
 
   if (!patientUuid) {
     return null;

@@ -1,4 +1,4 @@
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
 export interface PrintData {
@@ -178,7 +178,7 @@ export class PDFGenerator {
         this.doc.text('Observations:', this.margin + 5, this.yPos);
         this.yPos += 5;
         
-        encounter.obs.slice(0, 10).forEach(obs => {
+        encounter.obs.slice(0, 10).forEach((obs: any) => {
           if (this.yPos > this.pageHeight - this.margin - 20) {
             this.addPage();
             this.addHeader();
@@ -259,7 +259,7 @@ export class PDFGenerator {
   }
 
   private addFooter(): void {
-    const pageCount = this.doc.internal.getNumberOfPages();
+    const pageCount = (this.doc as any).internal.pages?.length || 1;
     
     for (let i = 1; i <= pageCount; i++) {
       this.doc.setPage(i);

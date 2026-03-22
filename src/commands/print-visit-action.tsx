@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useTranslation } from '@openmrs/esm-framework';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getEncounters, getMedications, getPatient } from '../api/api';
 import { PDFGenerator, printViaBrowser, PrintData } from '../api/pdf-generator';
-import PrintPreviewModal from './PrintPreviewModal';
-import styles from './PrintButton.module.css';
+import PrintPreviewModal from '../components/PrintPreviewModal';
+import styles from '../components/PrintButton.module.css';
 
 interface PrintVisitActionProps {
   visitUuid: string;
@@ -50,7 +50,7 @@ const PrintVisitAction: React.FC<PrintVisitActionProps> = ({ visitUuid, patientU
     
     if (method === 'pdf') {
       const generator = new PDFGenerator();
-      const pdf = generator.generatePDF(printData);
+      generator.generatePDF(printData);
       generator.savePDF(`Visit-Summary-${visitUuid}.pdf`);
     } else {
       await printViaBrowser(printData);

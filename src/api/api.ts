@@ -131,5 +131,5 @@ export async function getEncounters(
 export async function getMedications(patientUuid: string): Promise<Order[]> {
   const url = `${restBaseUrl}/order?patient=${patientUuid}&v=full`;
   const response = await openmrsFetch(url);
-  return response.data.results?.filter((o: Order) => o.type === 'drugorder') || [];
+  return response.data.results?.filter((o: any) => o.type === 'drugorder') || [];
 }
