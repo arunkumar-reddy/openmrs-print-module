@@ -1,6 +1,6 @@
 {
   "name": "@arunkumar-reddy/openmrs-print-module",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "OpenMRS Print Module for visits, encounters, and medications",
   "repository": {
     "type": "git",
