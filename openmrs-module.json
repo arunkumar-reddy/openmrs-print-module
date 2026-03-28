@@ -5,20 +5,13 @@
   "description": "Print functionality for OpenMRS O3",
   "imports": [
     "@openmrs/esm-framework",
-    "@openmrs/esm-patient-records-app"
+    "@openmrs/esm-patient-chart-app"
   ],
   "extensions": [
     {
       "name": "print-patient-action",
-      "slot": "patient-action-slot",
+      "slot": "patient-chart-actions-slot",
       "component": "PrintPatientAction",
-      "order": 100,
-      "canHide": true
-    },
-    {
-      "name": "print-visit-action",
-      "slot": "visit-action-slot",
-      "component": "PrintVisitAction",
       "order": 100,
       "canHide": true
     }
@@ -27,10 +20,6 @@
     {
       "name": "print-patient-action",
       "description": "Print patient summary and visit data"
-    },
-    {
-      "name": "print-visit-action",
-      "description": "Print specific visit details"
     }
   ]
 }
